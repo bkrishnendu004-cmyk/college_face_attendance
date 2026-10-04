@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function role() { return signed() ? me().role : ''; }
+    function active() { return signed() && me().status != 'Disabled'; }
+    function isAdmin() { return active() && role() == 'admin'; }
+    function isTeacher() { return active() && role() == 'teacher'; }
+    function isPrincipal() { return active() && role() == 'principal'; }
+    function staff() { return isAdmin() || isTeacher() || isPrincipal(); }
+    function validRoom(r) { return r in get(/databases/$(database)/documents/settings/system).data.get('rooms', ['Room 422', 'Room 425']); }
+
+    match /users/{uid} { allow read: if signed() && (request.auth.uid == uid || isAdmin()); allow write: if isAdmin(); }
+    match /students/{id} { allow read: if staff(); allow write: if isAdmin(); }
+    match /teachers/{id} { allow read: if staff(); allow write: if isAdmin(); }
+    match /classes/{id} { allow read: if staff(); allow write: if isAdmin(); }
+    match /settings/{id} { allow read: if staff(); allow write: if isAdmin(); }
+    match /attendanceSessions/{id} {
+      allow read: if isAdmin() || isPrincipal() || (isTeacher() && resource.data.teacherId == me().teacherId);
+      allow create: if isAdmin() || (isTeacher() && request.resource.data.teacherId == me().teacherId && validRoom(request.resource.data.room)
+        && get(/databases/$(database)/documents/classes/$(request.resource.data.classId)).data.teacherId == me().teacherId);
+      allow update, delete: if isAdmin();
+    }
+    match /attendance/{id} {
+      allow read: if isAdmin() || isPrincipal() || (isTeacher() && resource.data.teacherId == me().teacherId);
+      allow create: if isAdmin() || (isTeacher() && request.resource.data.teacherId == me().teacherId && validRoom(request.resource.data.room));
+      allow update, delete: if isAdmin();
+    }
+    match /notifications/{id} { allow create: if staff(); allow read, update, delete: if isAdmin(); }
+  }
+}

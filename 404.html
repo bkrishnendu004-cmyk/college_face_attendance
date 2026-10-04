@@ -1,0 +1,8 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Page not found</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/style.css"></head>
+<body class="login-body"><div class="login-card"><h2>Page not found</h2><p class="muted">This page does not exist.</p>
+<a class="btn primary" id="home" href="login.html">Go to login</a></div>
+<script>/* works for project sites: https://user.github.io/REPO/ */
+var parts=location.pathname.split("/").filter(Boolean);var base=location.hostname.endsWith("github.io")&&parts.length?"/"+parts[0]+"/":"/";
+document.getElementById("home").href=base+"login.html";
+var l=document.querySelector("link");l.href=base+"css/style.css";</script></body></html>
